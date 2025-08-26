@@ -112,7 +112,12 @@ class PluginSpec(BaseModel):
             raise ValueError(f"Remote/BSR plugin references not supported: {v}")
 
         # Then check if it's a valid local BetterProto plugin
-        valid_plugins = {"python_betterproto", "python-betterproto"}
+        valid_plugins = {
+            "python_betterproto",
+            "python-betterproto",
+            "python_betterproto2",
+            "python-betterproto2",
+        }
         if v not in valid_plugins:
             raise ValueError(
                 f"Only local BetterProto plugins supported: {valid_plugins}, got: {v}"

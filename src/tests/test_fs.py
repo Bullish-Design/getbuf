@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -193,19 +194,26 @@ class TestSnapshotDirectory:
             good_file = target / "good.txt"
             good_file.write_text("good content")
 
-            # Mock stat to fail for one file
+            # Create another file that will have permission issues
+            bad_file = target / "bad.txt"
+            bad_file.write_text("bad content")
+
+            # Mock stat to fail for specific file only
             original_stat = Path.stat
 
-            def mock_stat(self):
-                if self.name == "good.txt":
-                    return original_stat(self)
-                raise OSError("Permission denied")
+            def mock_stat(self, *args, **kwargs):
+                if self.name == "bad.txt":
+                    raise OSError("Permission denied")
+                return original_stat(self, *args, **kwargs)
 
             with patch.object(Path, "stat", mock_stat):
                 snapshot = snapshot_directory(target)
 
             # Should still get the files that worked
             assert "good.txt" in snapshot.files
+            assert (
+                "bad.txt" not in snapshot.files
+            )  # This file should be skipped due to permission error
 
     def test_snapshot_path_normalization(self):
         """Test that snapshot uses forward slashes consistently."""
@@ -229,10 +237,12 @@ class TestComputeWrittenFiles:
 
     def test_compute_new_files(self):
         """Test detecting new files between snapshots."""
-        before = FileSnapshot(timestamp=None, files={"existing.txt": 1000.0})
+        before = FileSnapshot(
+            timestamp=datetime.now(timezone.utc), files={"existing.txt": 1000.0}
+        )
 
         after = FileSnapshot(
-            timestamp=None,
+            timestamp=datetime.now(timezone.utc),
             files={
                 "existing.txt": 1000.0,  # Unchanged
                 "new.txt": 2000.0,  # New file
@@ -250,11 +260,12 @@ class TestComputeWrittenFiles:
     def test_compute_modified_files(self):
         """Test detecting modified files."""
         before = FileSnapshot(
-            timestamp=None, files={"file1.txt": 1000.0, "file2.py": 2000.0}
+            timestamp=datetime.now(timezone.utc),
+            files={"file1.txt": 1000.0, "file2.py": 2000.0},
         )
 
         after = FileSnapshot(
-            timestamp=None,
+            timestamp=datetime.now(timezone.utc),
             files={
                 "file1.txt": 1500.0,  # Modified
                 "file2.py": 2000.0,  # Unchanged
@@ -267,10 +278,10 @@ class TestComputeWrittenFiles:
 
     def test_compute_ignores_patterns(self):
         """Test that ignore patterns are applied correctly."""
-        before = FileSnapshot(timestamp=None, files={})
+        before = FileSnapshot(timestamp=datetime.now(timezone.utc), files={})
 
         after = FileSnapshot(
-            timestamp=None,
+            timestamp=datetime.now(timezone.utc),
             files={
                 "good.py": 1000.0,
                 "__pycache__/module.pyc": 2000.0,
@@ -288,8 +299,8 @@ class TestComputeWrittenFiles:
 
     def test_compute_empty_snapshots(self):
         """Test with empty snapshots."""
-        before = FileSnapshot(timestamp=None, files={})
-        after = FileSnapshot(timestamp=None, files={})
+        before = FileSnapshot(timestamp=datetime.now(timezone.utc), files={})
+        after = FileSnapshot(timestamp=datetime.now(timezone.utc), files={})
 
         written = compute_written_files(before, after)
 
@@ -297,10 +308,10 @@ class TestComputeWrittenFiles:
 
     def test_compute_deterministic_order(self):
         """Test that results are returned in deterministic order."""
-        before = FileSnapshot(timestamp=None, files={})
+        before = FileSnapshot(timestamp=datetime.now(timezone.utc), files={})
 
         after = FileSnapshot(
-            timestamp=None,
+            timestamp=datetime.now(timezone.utc),
             files={"zebra.py": 1000.0, "alpha.py": 2000.0, "beta.py": 3000.0},
         )
 
