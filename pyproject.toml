@@ -1,0 +1,21 @@
+[project]
+name = "getbuf"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.116.1",
+    "grpcio-tools>=1.74.0",
+    "pydantic>=2.11.7",
+    "rich>=14.1.0",
+    "typer>=0.16.1",
+    "uvicorn>=0.35.0",
+    "betterproto2",
+    "betterproto2_compiler",
+]
+
+
+[tool.uv.sources]
+betterproto2 = { git = "https://github.com/Bullish-Design/python-betterproto2.git", subdirectory = "betterproto2"  }
+betterproto2_compiler = { git = "https://github.com/Bullish-Design/python-betterproto2.git", subdirectory = "betterproto2_compiler"}
